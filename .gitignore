@@ -1,5 +1,7 @@
-**/.vagrant
+**.vagrant
 *.user
 bin/**
-**/.DS_Store
+**.DS_Store
+**.pyc
+stats/**
 
