@@ -8,6 +8,21 @@
 // @run-at       document-start
 // ==/UserScript==
 
+// This script intercepts 'Authorization' headers of XHR requests the page
+// makes, strips 'Bearer ' prefix, puts it into the clipboard or prints on the
+// page. This is not specific to BRYTER and can be used on any page.
+
+// The approach here relies on overriding
+// `window.XMLHttpRequest.prototype.setRequestHeader`. This is not ideal
+// because it is hard to map headers to request URLs and other request data,
+// which can be an issue if the page makes requests with distinct tokens.
+
+// `GM.webRequest` or `chrome.webRequest.onBeforeSendHeaders` both have a
+// complete view of the request but at the time of writing the former did not
+// expose headers in the listener and the latter was not available in the
+// userscript space.
+
+
 (function(){
     'use strict'
 
