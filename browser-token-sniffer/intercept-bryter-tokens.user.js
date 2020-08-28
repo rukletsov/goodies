@@ -8,19 +8,21 @@
 // @run-at       document-start
 // ==/UserScript==
 
-// This script intercepts 'Authorization' headers of XHR requests the page
-// makes, strips 'Bearer ' prefix, puts it into the clipboard or prints on the
-// page. This is not specific to BRYTER and can be used on any page.
-
-// The approach here relies on overriding
-// `window.XMLHttpRequest.prototype.setRequestHeader`. This is not ideal
-// because it is hard to map headers to request URLs and other request data,
-// which can be an issue if the page makes requests with distinct tokens.
-
-// `GM.webRequest` or `chrome.webRequest.onBeforeSendHeaders` both have a
-// complete view of the request but at the time of writing the former did not
-// expose headers in the listener and the latter was not available in the
-// userscript space.
+/**
+ * This script intercepts an auth token in a two-step algorithm:
+ *
+ *   1) Listen for an XHR to a specific URL and extract the token from the
+ *      response;
+ *
+ *   2) If the first step yields nothing, intercept 'Authorization' headers of
+ *      all XHRs the page makes, strip 'Bearer ' prefix, collect observed
+ *      tokens. This is not ideal because it is hard to map headers to request
+ *      URLs and other request data, which can be an issue if the page makes
+ *      requests with distinct tokens.
+ *
+ * The script is not specific to BRYTER and can be used on any page; however,
+ * the auth URL marker and response processing might require adjustment.
+ */
 
 
 (function(){
@@ -44,19 +46,30 @@
     div.appendChild(btn);
 
     // Intercept and store tokens
+    const authRequestMarker = 'openid-connect/token'
+    const tokenFieldName = 'access_token'
+    var authRequest = null
     var observedTokens = new Set()
 
     var open = window.XMLHttpRequest.prototype.open
     window.XMLHttpRequest.prototype.open = function() {
-        console.log('XHR request open: ', arguments)
+        let url = arguments[1]
+        if (url.endsWith(authRequestMarker)) {
+            // This request fetches the token we want, listen for the response.
+            this.onreadystatechange = () => {
+                console.log('XHR for auth token detected: ', this)
+                authRequest = this
+            }
+        }
+
         return open.apply(this, [].slice.call(arguments))
     }
 
     var headers = window.XMLHttpRequest.prototype.setRequestHeader
     window.XMLHttpRequest.prototype.setRequestHeader = function() {
         if (arguments[0] == 'Authorization') {
-            console.log('Authorization header found: ', arguments)
-            // Strip "Bearer " prefix
+            console.log('Authorization header observed: ', arguments)
+            // Strip "Bearer " prefix.
             let token = arguments[1].substring(7)
             observedTokens.add(token)
         }
@@ -65,17 +78,26 @@
 
     // Button handler
     function ButtonClickAction(e) {
-        switch (observedTokens.size) {
+        let checkAuthRequest = () =>
+            authRequest && [JSON.parse(authRequest.responseText)[tokenFieldName]]
+
+        let checkObservedTokens = () =>
+            observedTokens && Array.from(observedTokens)
+
+        let tokens = checkAuthRequest()
+        tokens = tokens || checkObservedTokens()
+
+        switch ((tokens || []).length) {
             case 0:
                 document.getElementById('jwtbtn').innerHTML = 'No tokens found'
                 break
             case 1:
                 document.getElementById('jwtbtn').innerHTML = 'Token copied to clipboard'
-                copyToClipboard(observedTokens.values().next().value)
+                copyToClipboard(tokens[0])
                 break
             default:
-                document.getElementById('jwtbtn').innerHTML = `Found ${observedTokens.size} tokens:`
-                for (let item of observedTokens) {
+                document.getElementById('jwtbtn').innerHTML = `Found ${tokens.length} tokens:`
+                for (let item of tokens) {
                     // TODO(alexr): Add a copy-to-clipboard button for each entry.
                     var div = document.createElement('div')
                     div.innerHTML = `${item}`
