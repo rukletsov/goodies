@@ -40,15 +40,35 @@ int main()
   Worker w;
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
   w.try_assign([](){
-    std::cout << " > Starting work" << std::endl;
+    std::cout << " > Starting work 1" << std::endl;
     std::this_thread::sleep_for(std::chrono::milliseconds(3000));
-    std::cout << " > Finishing work" << std::endl;
+    std::cout << " > Finishing work 1" << std::endl;
   });
 
   std::this_thread::sleep_for(std::chrono::milliseconds(1000));
 
+  w.try_assign([](){
+    std::cout << " > Starting work 2" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    std::cout << " > Finishing work 2" << std::endl;
+  });
+
+  std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+  w.try_assign([](){
+    std::cout << " > Starting work 3" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    std::cout << " > Finishing work 3" << std::endl;
+  });
+
   std::cout << "Stopping" << std::endl;
   w.shutdown();
+
+  w.try_assign([](){
+    std::cout << " > Starting work 4" << std::endl;
+    std::this_thread::sleep_for(std::chrono::milliseconds(3000));
+    std::cout << " > Finishing work 4" << std::endl;
+  });
+
   w.wait();
 
 
