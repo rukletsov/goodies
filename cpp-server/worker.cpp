@@ -2,42 +2,40 @@
 
 #include <iostream>
 
-Worker::Worker(): state_(State::IDLE), thread_(&Worker::entrypoint_, this) { }
+Worker::Worker(): terminating_(false), thread_(&Worker::entrypoint_, this) { }
+
+bool Worker::try_assign(const Task& task)
+{
+  std::lock_guard guard(m_);
+  if (task_) {
+    return false;
+  } else {
+    task_ = task;
+    return true;
+  }
+}
 
 void Worker::entrypoint_()
 {
-  while(true) {
-    State state;
-
+  while(!terminating_) {
+    Task task;
     {
       std::lock_guard guard(m_);
-      state = state_;
+      task = task_;
     }
 
-    switch (state) {
-      case State::IDLE:
-        std::this_thread::yield();
-        break;
+    if (task) {
+      task();
 
-      case State::BUSY:
-        std::cout << " - " << std::this_thread::get_id() << " starting task" << std::endl;
-        task_();
-        std::cout << " - " << std::this_thread::get_id() << " finished task" << std::endl;
-        transition_state_(State::IDLE);
-        break;
-
-      case State::STOPPED:
-        std::cout << " - " << std::this_thread::get_id() << " stopping" << std::endl;
-        return;
+      Task empty;
+      std::lock_guard guard(m_);
+      std::swap(task_, empty);
+    } else {
+      std::this_thread::yield();
     }
   }
 }
 
-void Worker::transition_state_(State new_state)
-{
-  std::lock_guard guard(m_);
-
-  if (state_ == State::STOPPED) return;
-
-  state_ = new_state;
+void Worker::shutdown() {
+  terminating_ = true;
 }

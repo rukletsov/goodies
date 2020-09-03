@@ -8,40 +8,24 @@
 class Worker
 {
 public:
+  using Task = std::function<void(void)>;
+
   Worker();
 
-  template<typename T>
-  bool try_assign(const T& functor)
-  {
-    std::lock_guard guard(m_);
-    if (state_ != State::IDLE) {
-      return false;
-    }
+  bool try_assign(const Task& task);
 
-    task_ = functor;
-    state_ = State::BUSY;
-    return true;
-  }
-
+  void detach() { thread_.detach(); }
   void wait() { thread_.join(); }
-  void shutdown() { transition_state_(State::STOPPED); }
+  void shutdown();
 
 private:
-  enum class State
-  {
-    IDLE,
-    BUSY,
-    STOPPED
-  };
-
   void entrypoint_();
-  void transition_state_(State new_state);
 
 private:
   std::mutex m_;
-  State state_;
   std::thread thread_;
-  std::function<void(void)> task_;
+  Task task_;
+  std::atomic<bool> terminating_;
 };
 
 #endif // CPP_SERVER_WORKER_HPP
