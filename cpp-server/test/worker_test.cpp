@@ -1,4 +1,5 @@
 
+#include <atomic>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <thread>
@@ -38,15 +39,24 @@ protected:
 TEST_F(WorkerTest, WorkerCanRunTask)
 {
   int var = 0;
+  std::atomic<bool> ready = false;
 
+  cout << "Assign task" << endl;
   worker_.try_assign([&var](){
     var = 1;
+  }, [&ready](){
+    ready = true;
+    cout << "Notified" << endl;
   });
 
-  wait();
-  stop();
+  while (!ready) {
+    cout << "Yielding" << endl;
+    std::this_thread::yield();
+  }
 
+  cout << "Compare results" << endl;
   EXPECT_EQ(var, 1);
+  cout << "Exit test" << endl;
 }
 
 int main(int argc, char **argv)
