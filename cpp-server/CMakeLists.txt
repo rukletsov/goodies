@@ -61,6 +61,7 @@ SET (CppServer_SRCS
 )
 
 SET (CppServer_HDRS
+    ${CMAKE_CURRENT_SOURCE_DIR}/src/latch.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/socket.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/threadpool.hpp
     ${CMAKE_CURRENT_SOURCE_DIR}/src/worker.hpp
