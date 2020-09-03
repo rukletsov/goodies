@@ -7,11 +7,15 @@ Worker::Worker(): terminating_(false), thread_(&Worker::entrypoint_, this) { }
 bool Worker::try_assign(const Task& task, const Callback& callback)
 {
   std::lock_guard guard(m_);
-  if (task_) {
+  if (f_) {
     return false;
   } else {
-    task_ = task;
-    callback_ = callback;
+    f_ = [task, callback](){
+      task();
+      if (callback)
+        callback();
+    };
+
     return true;
   }
 }
@@ -19,26 +23,18 @@ bool Worker::try_assign(const Task& task, const Callback& callback)
 void Worker::entrypoint_()
 {
   while(!terminating_) {
-    std::cout << " > another futile round" << std::endl;
-    Task task;
+    F f;
     {
       std::lock_guard guard(m_);
-      task = task_;
+      f = f_;
     }
 
-    if (task) {
-      std::cout << " > Accepting task" << std::endl;
-      task();
-      std::cout << " > Finishing task" << std::endl;
-      if (callback_)
-        callback_();
-      std::cout << " > Finishing notification" << std::endl;
+    if (f) {
+      f();
 
-      Task empty_task;
-      Callback empty_callback;
+      F empty;
       std::lock_guard guard(m_);
-      std::swap(task_, empty_task);
-      std::swap(callback_, empty_callback);
+      std::swap(f_, empty);
     } else {
       std::this_thread::yield();
     }
@@ -46,6 +42,5 @@ void Worker::entrypoint_()
 }
 
 void Worker::shutdown() {
-  std::cout << " > Terminating" << std::endl;
   terminating_ = true;
 }

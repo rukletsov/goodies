@@ -1,12 +1,13 @@
 
-#include <atomic>
 #include <gtest/gtest.h>
 #include <iostream>
 #include <thread>
 
+#include <latch.hpp>
 #include <worker.hpp>
 
 using namespace std;
+
 
 class WorkerTest: public ::testing::Test
 {
@@ -36,28 +37,69 @@ protected:
   bool stopped_ = false;
 };
 
+
 TEST_F(WorkerTest, WorkerCanRunTask)
 {
-  int var = 0;
-  std::atomic<bool> ready = false;
+  int var = 42;
 
-  cout << "Assign task" << endl;
-  worker_.try_assign([&var](){
-    var = 1;
-  }, [&ready](){
-    ready = true;
-    cout << "Notified" << endl;
+  worker_.try_assign([&var]() {
+    var += 1;
   });
 
-  while (!ready) {
-    cout << "Yielding" << endl;
-    std::this_thread::yield();
-  }
+  wait();
 
-  cout << "Compare results" << endl;
-  EXPECT_EQ(var, 1);
-  cout << "Exit test" << endl;
+  EXPECT_EQ(var, 43);
 }
+
+
+TEST_F(WorkerTest, WorkerCanRunTaskWithCallback)
+{
+  int var = 42;
+  Latch n;
+
+  worker_.try_assign([&var]() {
+    var += 1;
+  }, [&n]() {
+    n.notify();
+  });
+
+  n.await();
+
+  EXPECT_EQ(var, 43);
+}
+
+
+TEST_F(WorkerTest, WorkerCanRunTaskParameterized)
+{
+  int var = 42;
+
+  worker_.try_assign<int>([var]() -> int {
+    return var + 1;
+  });
+
+  wait();
+
+  EXPECT_EQ(var, 42);
+}
+
+
+TEST_F(WorkerTest, WorkerCanRunTaskParameterizedWithCallback)
+{
+  int var;
+  Latch n;
+
+  worker_.try_assign<int>([]() -> int {
+    return 42;
+  }, [&n, &var](int value) {
+    n.notify();
+    var = value;
+  });
+
+  n.await();
+
+  EXPECT_EQ(var, 42);
+}
+
 
 int main(int argc, char **argv)
 {
