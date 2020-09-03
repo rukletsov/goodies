@@ -5,6 +5,7 @@
 // @description  Intercepts authentication tokens from header of the XHRs
 // @author       Alexander Rukletsov
 // @match        https://*.bryter.io/*
+// @match        https://*.bryter.dev/*
 // @run-at       document-start
 // ==/UserScript==
 
