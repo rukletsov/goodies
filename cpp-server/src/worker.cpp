@@ -4,6 +4,12 @@
 
 Worker::Worker(): terminating_(false), thread_(&Worker::entrypoint_, this) { }
 
+bool Worker::is_free()
+{
+  std::lock_guard guard(m_);
+  return (!f_);
+}
+
 bool Worker::try_assign(const Task& task, const Callback& callback)
 {
   std::lock_guard guard(m_);

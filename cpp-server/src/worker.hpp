@@ -19,6 +19,8 @@ public:
 public:
   Worker();
 
+  bool is_free();
+
   bool try_assign(const Task& task, const Callback& callback = Callback());
 
   template<typename T>
