@@ -27,9 +27,14 @@ protected:
     }
   }
 
-  void wait()
+  static void wait()
   {
     this_thread::sleep_for(chrono::milliseconds(5));
+  }
+
+  static void yield()
+  {
+    this_thread::yield();
   }
 
 protected:
@@ -38,7 +43,7 @@ protected:
 };
 
 
-TEST_F(WorkerTest, WorkerCanRunTask)
+TEST_F(WorkerTest, WorkerRunsTask)
 {
   int var = 42;
 
@@ -52,7 +57,7 @@ TEST_F(WorkerTest, WorkerCanRunTask)
 }
 
 
-TEST_F(WorkerTest, WorkerCanRunTaskWithCallback)
+TEST_F(WorkerTest, WorkerRunsTaskWithCallback)
 {
   int var = 42;
   Latch n;
@@ -69,7 +74,7 @@ TEST_F(WorkerTest, WorkerCanRunTaskWithCallback)
 }
 
 
-TEST_F(WorkerTest, WorkerCanRunTaskParameterized)
+TEST_F(WorkerTest, WorkerRunsTaskParameterized)
 {
   int var = 42;
 
@@ -83,7 +88,7 @@ TEST_F(WorkerTest, WorkerCanRunTaskParameterized)
 }
 
 
-TEST_F(WorkerTest, WorkerCanRunTaskParameterizedWithCallback)
+TEST_F(WorkerTest, WorkerRunsTaskParameterizedWithCallback)
 {
   int var;
   Latch n;
@@ -98,6 +103,48 @@ TEST_F(WorkerTest, WorkerCanRunTaskParameterizedWithCallback)
   n.await();
 
   EXPECT_EQ(var, 42);
+}
+
+TEST_F(WorkerTest, WorkerRunsMultipleTasks)
+{
+  int var = 0;
+
+  auto var_inc = [&var]() {
+    yield();
+    ++var;
+    yield();
+  };
+
+  auto var_inc_ret = [](int value) -> int {
+    return value + 1;
+  };
+
+  // 1. Assign
+  worker_.try_assign(var_inc);
+
+  // 2. Wait in a spinlock on `is_free()` and the assign.
+  while (!worker_.is_free()) {
+    yield();
+  }
+
+  worker_.try_assign(var_inc);
+
+  // 3. Repeatedly try assign until success.
+  Latch n;
+  int res;
+  while (!worker_.try_assign<int>(
+           std::bind(var_inc_ret, var),
+           [&n, &res](int result) {
+             n.notify();
+             res = result;
+           })) {
+    yield();
+  }
+
+  n.await();
+
+  EXPECT_EQ(var, 2);
+  EXPECT_EQ(res, 2);
 }
 
 
