@@ -146,10 +146,3 @@ TEST_F(WorkerTest, WorkerRunsMultipleTasks)
   EXPECT_EQ(var, 2);
   EXPECT_EQ(res, 2);
 }
-
-
-int main(int argc, char **argv)
-{
-  ::testing::InitGoogleTest(&argc, argv);
-  return RUN_ALL_TESTS();
-}
