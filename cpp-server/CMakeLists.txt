@@ -70,6 +70,7 @@ SET (CppServer_HDRS
 SET (CppServer_Test_SRCS
     ${CMAKE_CURRENT_SOURCE_DIR}/test/test_main.cpp
     ${CMAKE_CURRENT_SOURCE_DIR}/test/worker_test.cpp
+    ${CMAKE_CURRENT_SOURCE_DIR}/test/threadpool_test.cpp
 )
 
 # Enable C++17 for Clang on MacOS X.
