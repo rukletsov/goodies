@@ -115,28 +115,31 @@ TEST_F(WorkerTest, WorkerRunsMultipleTasks)
     yield();
   };
 
-  auto var_inc_ret = [](int value) -> int {
-    return value + 1;
+  auto var_inc_ret = [](int* value) -> int {
+    return *value + 1;
   };
 
   // 1. Assign
-  worker_.try_assign(var_inc);
+  bool assign1 = worker_.try_assign(var_inc);
+  EXPECT_EQ(assign1, true);
 
-  // 2. Wait in a spinlock on `is_free()` and the assign.
+  // 2. Wait in a spinlock on `is_free()` and then assign again.
   while (!worker_.is_free()) {
     yield();
   }
+  EXPECT_EQ(var, 1);
 
-  worker_.try_assign(var_inc);
+  bool assign2 = worker_.try_assign(var_inc);
+  EXPECT_EQ(assign2, true);
 
   // 3. Repeatedly try assign until success.
   Latch n;
   int res;
   while (!worker_.try_assign<int>(
-           std::bind(var_inc_ret, var),
+           std::bind(var_inc_ret, &var),
            [&n, &res](int result) {
-             n.notify();
              res = result;
+             n.notify();
            })) {
     yield();
   }
@@ -144,5 +147,5 @@ TEST_F(WorkerTest, WorkerRunsMultipleTasks)
   n.await();
 
   EXPECT_EQ(var, 2);
-  EXPECT_EQ(res, 2);
+  EXPECT_EQ(res, 3);
 }
