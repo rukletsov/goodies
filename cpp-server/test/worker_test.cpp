@@ -47,9 +47,10 @@ TEST_F(WorkerTest, WorkerRunsTask)
 {
   int var = 42;
 
-  worker_.try_assign([&var]() {
+  bool assigned = worker_.try_assign([&var]() {
     var += 1;
   });
+  EXPECT_TRUE(assigned);
 
   wait();
 
@@ -62,11 +63,12 @@ TEST_F(WorkerTest, WorkerRunsTaskWithCallback)
   int var = 42;
   Latch n;
 
-  worker_.try_assign([&var]() {
+  bool assigned = worker_.try_assign([&var]() {
     var += 1;
   }, [&n]() {
     n.notify();
   });
+  EXPECT_TRUE(assigned);
 
   n.await();
 
@@ -78,9 +80,10 @@ TEST_F(WorkerTest, WorkerRunsTaskParameterized)
 {
   int var = 42;
 
-  worker_.try_assign<int>([var]() -> int {
+  bool assigned = worker_.try_assign<int>([var]() -> int {
     return var + 1;
   });
+  EXPECT_TRUE(assigned);
 
   wait();
 
@@ -93,12 +96,13 @@ TEST_F(WorkerTest, WorkerRunsTaskParameterizedWithCallback)
   int var;
   Latch n;
 
-  worker_.try_assign<int>([]() -> int {
+  bool assigned = worker_.try_assign<int>([]() -> int {
     return 42;
   }, [&n, &var](int value) {
     n.notify();
     var = value;
   });
+  EXPECT_TRUE(assigned);
 
   n.await();
 
@@ -121,7 +125,7 @@ TEST_F(WorkerTest, WorkerRunsMultipleTasks)
 
   // 1. Assign
   bool assign1 = worker_.try_assign(var_inc);
-  EXPECT_EQ(assign1, true);
+  EXPECT_TRUE(true);
 
   // 2. Wait in a spinlock on `is_free()` and then assign again.
   while (!worker_.is_free()) {
@@ -130,7 +134,7 @@ TEST_F(WorkerTest, WorkerRunsMultipleTasks)
   EXPECT_EQ(var, 1);
 
   bool assign2 = worker_.try_assign(var_inc);
-  EXPECT_EQ(assign2, true);
+  EXPECT_TRUE(assign2);
 
   // 3. Repeatedly try assign until success.
   Latch n;
