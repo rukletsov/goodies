@@ -50,10 +50,11 @@ private:
   void entrypoint_();
 
 private:
+  F f_;
+
+  std::atomic<bool> terminating_ = false;
   std::mutex m_;
   std::thread thread_;
-  F f_;
-  std::atomic<bool> terminating_;
 };
 
 #endif // CPP_SERVER_WORKER_HPP

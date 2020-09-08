@@ -2,7 +2,7 @@
 
 #include <iostream>
 
-Worker::Worker(): terminating_(false), thread_(&Worker::entrypoint_, this) { }
+Worker::Worker(): thread_(&Worker::entrypoint_, this) { }
 
 bool Worker::is_free()
 {
