@@ -1,6 +1,7 @@
 #ifndef CPP_SERVER_THREADPOOL_HPP
 #define CPP_SERVER_THREADPOOL_HPP
 
+#include <atomic>
 #include <cstdint>
 #include <deque>
 #include <memory>
@@ -9,7 +10,7 @@
 
 #include <worker.hpp>
 
-class ThreadPool: std::enable_shared_from_this<ThreadPool>
+class ThreadPool
 {
 public:
   using Task = std::function<void(void)>;
@@ -21,6 +22,9 @@ public:
 
 private:
   void try_find_worker();
+  void process_notifications();
+
+  void shutdown();
 
 private:
   std::mutex m_;
@@ -29,6 +33,10 @@ private:
   std::set<std::shared_ptr<Worker>> busy_;
 
   std::deque<Task> tasks_;
+
+  // This is shared with workers
+  std::shared_ptr<std::mutex> m_shared_;
+  std::shared_ptr<std::deque<std::weak_ptr<Worker>>> notifications_;
 };
 
 #endif // CPP_SERVER_THREADPOOL_HPP

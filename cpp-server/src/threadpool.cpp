@@ -1,10 +1,13 @@
 #include "threadpool.hpp"
 
 #include <cassert>
+#include <iostream>
 
 using namespace std;
 
-ThreadPool::ThreadPool(size_t size)
+ThreadPool::ThreadPool(size_t size):
+  m_shared_(make_shared<mutex>()),
+  notifications_(make_shared<deque<weak_ptr<Worker>>>())
 {
   for (size_t idx = 0; idx < size; ++idx) {
     idle_.emplace(make_shared<Worker>());
@@ -13,6 +16,13 @@ ThreadPool::ThreadPool(size_t size)
 
 ThreadPool::~ThreadPool()
 {
+  shutdown();
+}
+
+void ThreadPool::shutdown()
+{
+  lock_guard guard(m_);
+
   for (auto w: idle_) {
     w->shutdown();
     w->detach();
@@ -20,7 +30,7 @@ ThreadPool::~ThreadPool()
 
   for (auto w: busy_) {
     w->shutdown();
-    w->detach();
+    w->wait();
   }
 }
 
@@ -33,8 +43,33 @@ void ThreadPool::assign(const Task &task)
   try_find_worker();
 }
 
+void ThreadPool::process_notifications()
+{
+  deque<weak_ptr<Worker>> notifications;
+
+  {
+    lock_guard nguard(*m_shared_);
+    if (notifications_->empty()) return;
+    notifications = *notifications_;
+    notifications_->clear();
+  }
+
+  for (auto worker_weak : notifications) {
+    if (!worker_weak.expired()) {
+      auto worker = worker_weak.lock();
+
+      lock_guard guard(m_);
+      assert(busy_.count(worker) && "Finished worker was not busy");
+      busy_.erase(worker);
+      idle_.insert(worker);
+    }
+  }
+}
+
 void ThreadPool::try_find_worker()
 {
+  process_notifications();
+
   Task task;
   {
     lock_guard guard(m_);
@@ -67,18 +102,10 @@ void ThreadPool::try_find_worker()
 
   // Now there are both a task and a free worker.
 
-  auto self_weak = weak_from_this();
   weak_ptr<Worker> worker_weak = worker;
-  auto notifier = [self_weak, worker_weak]() {
-    if (!self_weak.expired() && !worker_weak.expired()) {
-      auto self = self_weak.lock();
-      auto worker = worker_weak.lock();
-
-      lock_guard guard(self->m_);
-      assert(self->busy_.count(worker) && "Finished worker was not busy");
-      self->busy_.erase(worker);
-      self->idle_.insert(worker);
-    }
+  auto notifier = [m = m_shared_, notifier = notifications_, worker_weak]() {
+    lock_guard nguard(*m);
+    notifier->push_back(worker_weak);
   };
 
   bool assigned = worker->try_assign(task, notifier);
