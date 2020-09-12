@@ -99,8 +99,8 @@ TEST_F(WorkerTest, WorkerRunsTaskParameterizedWithCallback)
   bool assigned = worker_.try_assign<int>([]() -> int {
     return 42;
   }, [&n, &var](int value) {
-    n.notify();
     var = value;
+    n.notify();
   });
   EXPECT_TRUE(assigned);
 
