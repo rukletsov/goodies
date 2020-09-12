@@ -53,34 +53,23 @@ void ThreadPool::assign(const Task &task)
 void ThreadPool::try_find_worker()
 {
   Task task;
-  {
-    lock_guard guard(*m_);
-    if (tasks_.empty()) {
-      return;
-    } else {
-      task = tasks_.front();
-      tasks_.pop_front();
-    }
-  }
-
   shared_ptr<Worker> worker;
   {
     lock_guard guard(*m_);
-    if (!idle_.empty()) {
-      worker = *idle_.begin();
-      idle_.erase(idle_.begin());
-    }
-  }
 
-  if (!worker) {
-    lock_guard guard(*m_);
-    tasks_.push_front(task);
-    return;
+    if (tasks_.empty() || idle_.empty()) {
+      return;
+    }
+
+    task = tasks_.front();
+    tasks_.pop_front();
+
+    worker = *idle_.begin();
+    idle_.erase(idle_.begin());
   }
 
   // Now there are both a task and a free worker.
 
-  weak_ptr<Worker> worker_weak = worker;
   auto notifier = [worker, this]() {
     {
       lock_guard guard(*m_);

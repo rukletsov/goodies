@@ -1,7 +1,6 @@
 #ifndef CPP_SERVER_THREADPOOL_HPP
 #define CPP_SERVER_THREADPOOL_HPP
 
-#include <atomic>
 #include <cstdint>
 #include <deque>
 #include <memory>
@@ -29,9 +28,10 @@ private:
 private:
   using Workers = std::set<std::shared_ptr<Worker>>;
 
+  const size_t size_;
+
   std::shared_ptr<std::mutex> m_;
 
-  const size_t size_;
   Workers idle_;
   Workers busy_;
 
