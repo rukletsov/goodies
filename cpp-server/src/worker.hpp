@@ -55,7 +55,6 @@ public:
     }
   }
 
-  void detach() { thread_.detach(); }
   void wait() { thread_.join(); }
   void shutdown();
 
