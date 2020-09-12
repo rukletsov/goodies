@@ -19,24 +19,23 @@ public:
   virtual ~ThreadPool();
 
   void assign(const Task& task);
+  bool is_idle();
 
 private:
   void try_find_worker();
-  void process_notifications();
 
   void shutdown();
 
 private:
-  std::mutex m_;
+  using Workers = std::set<std::shared_ptr<Worker>>;
 
-  std::set<std::shared_ptr<Worker>> idle_;
-  std::set<std::shared_ptr<Worker>> busy_;
+  std::shared_ptr<std::mutex> m_;
+
+  const size_t size_;
+  Workers idle_;
+  Workers busy_;
 
   std::deque<Task> tasks_;
-
-  // This is shared with workers
-  std::shared_ptr<std::mutex> m_shared_;
-  std::shared_ptr<std::deque<std::weak_ptr<Worker>>> notifications_;
 };
 
 #endif // CPP_SERVER_THREADPOOL_HPP
