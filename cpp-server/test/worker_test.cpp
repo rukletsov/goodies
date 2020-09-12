@@ -27,11 +27,6 @@ protected:
     }
   }
 
-  static void wait()
-  {
-    this_thread::sleep_for(chrono::milliseconds(5));
-  }
-
   static void yield()
   {
     this_thread::yield();
@@ -46,13 +41,15 @@ protected:
 TEST_F(WorkerTest, WorkerRunsTask)
 {
   int var = 42;
+  atomic_flag inprogress = true;
 
-  bool assigned = worker_.try_assign([&var]() {
+  bool assigned = worker_.try_assign([&var, &inprogress]() {
     var += 1;
+    inprogress.clear(memory_order_release);
   });
   EXPECT_TRUE(assigned);
 
-  wait();
+  while (inprogress.test_and_set(memory_order_acquire)) { }
 
   EXPECT_EQ(var, 43);
 }
@@ -79,15 +76,18 @@ TEST_F(WorkerTest, WorkerRunsTaskWithCallback)
 TEST_F(WorkerTest, WorkerRunsTaskParameterized)
 {
   int var = 42;
+  atomic_flag inprogress = true;
 
-  bool assigned = worker_.try_assign<int>([var]() -> int {
-    return var + 1;
+  bool assigned = worker_.try_assign<int>([&var, &inprogress]() -> int {
+    var += 1;
+    inprogress.clear(memory_order_release);
+    return var;
   });
   EXPECT_TRUE(assigned);
 
-  wait();
+  while (inprogress.test_and_set(memory_order_acquire)) { }
 
-  EXPECT_EQ(var, 42);
+  EXPECT_EQ(var, 43);
 }
 
 
