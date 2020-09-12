@@ -21,10 +21,6 @@ void Worker::entrypoint_()
 
     if (f) {
       f();
-
-      F empty;
-      std::lock_guard guard(m_);
-      std::swap(f_, empty);
     } else {
       std::this_thread::yield();
     }

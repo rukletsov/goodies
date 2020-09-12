@@ -29,6 +29,8 @@ public:
       : try_assign<Nothing>(taskp);
   }
 
+  // Callback is called _after_ the worker is marked as ready to have assigned.
+  // This is to allow assigning a new task in the callback.
   template<typename T>
   bool try_assign(const TaskP<T>& task, const CallbackP<T>& callback = CallbackP<T>())
   {
@@ -36,8 +38,15 @@ public:
     if (f_) {
       return false;
     } else {
-      f_ = [task, callback](){
+      f_ = [task, callback, this](){
         T result = task();
+
+        F empty;
+        {
+          std::lock_guard guard(m_);
+          std::swap(f_, empty);
+        }
+
         if (callback)
           callback(result);
       };
