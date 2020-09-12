@@ -10,22 +10,6 @@ bool Worker::is_free()
   return (!f_);
 }
 
-bool Worker::try_assign(const Task& task, const Callback& callback)
-{
-  std::lock_guard guard(m_);
-  if (f_) {
-    return false;
-  } else {
-    f_ = [task, callback](){
-      task();
-      if (callback)
-        callback();
-    };
-
-    return true;
-  }
-}
-
 void Worker::entrypoint_()
 {
   while(!terminating_) {

@@ -21,7 +21,13 @@ public:
 
   bool is_free();
 
-  bool try_assign(const Task& task, const Callback& callback = Callback());
+  bool try_assign(const Task& task, const Callback& callback = Callback())
+  {
+    auto taskp = [task]() { task(); return Nothing(); };
+    return callback
+      ? try_assign<Nothing>(taskp, [callback](Nothing) { callback(); })
+      : try_assign<Nothing>(taskp);
+  }
 
   template<typename T>
   bool try_assign(const TaskP<T>& task, const CallbackP<T>& callback = CallbackP<T>())
@@ -46,6 +52,7 @@ public:
 
 private:
   using F = std::function<void(void)>;
+  class Nothing { };
 
   void entrypoint_();
 
