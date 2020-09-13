@@ -10,7 +10,7 @@ ThreadPool::ThreadPool(size_t size):
   m_(make_shared<mutex>())
 {
   for (size_t idx = 0; idx < size; ++idx) {
-    idle_.emplace(make_shared<Worker>());
+    workers_.emplace(make_shared<Worker>());
   }
 }
 
@@ -22,7 +22,12 @@ ThreadPool::~ThreadPool()
 bool ThreadPool::is_idle()
 {
   lock_guard guard(*m_);
-  return (tasks_.empty() && busy_.empty() && (idle_.size() == size_));
+  if (!tasks_.empty()) { return false; };
+
+  for (const auto& w : workers_) {
+    if (!w->is_free()) { return false; }
+  }
+  return true;
 }
 
 void ThreadPool::shutdown()
@@ -30,15 +35,12 @@ void ThreadPool::shutdown()
   Workers workers;
   {
     lock_guard guard(*m_);
+    for (const auto& w: workers_) { w->shutdown(); }
 
-    for (auto w: idle_) { w->shutdown(); }
-    for (auto w: busy_) { w->shutdown(); }
-
-    workers.insert(idle_.cbegin(), idle_.cend());
-    workers.insert(busy_.cbegin(), busy_.cend());
+    workers = workers_;
   }
 
-  for (auto w: workers) { w->wait(); }
+  for (const auto& w: workers) { w->wait(); }
 }
 
 void ThreadPool::assign(const Task &task)
@@ -57,34 +59,25 @@ void ThreadPool::try_find_worker()
   {
     lock_guard guard(*m_);
 
-    if (tasks_.empty() || idle_.empty()) {
+    for (const auto& w : workers_) {
+      if (w->is_free()) {
+        worker = w;
+        break;
+      }
+    }
+
+    if (tasks_.empty() || !worker) {
       return;
     }
+
+    // Now there are both a task and a free worker.
 
     task = tasks_.front();
     tasks_.pop_front();
 
-    worker = *idle_.begin();
-    idle_.erase(idle_.begin());
+    auto notifier = [this]() { try_find_worker(); };
+
+    bool assigned = worker->try_assign(task, notifier);
+    assert(assigned && "Idle worker appears busy");
   }
-
-  // Now there are both a task and a free worker.
-
-  auto notifier = [worker, this]() {
-    {
-      lock_guard guard(*m_);
-      assert(busy_.count(worker) && "Finished worker was not busy");
-      busy_.erase(worker);
-      idle_.insert(worker);
-    }
-    try_find_worker();
-  };
-
-  {
-    lock_guard guard(*m_);
-    busy_.insert(worker);
-  }
-
-  bool assigned = worker->try_assign(task, notifier);
-  assert(assigned && "Idle worker appears busy");
 }

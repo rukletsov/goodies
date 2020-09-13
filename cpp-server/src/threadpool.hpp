@@ -32,9 +32,7 @@ private:
 
   std::shared_ptr<std::mutex> m_;
 
-  Workers idle_;
-  Workers busy_;
-
+  Workers workers_;
   std::deque<Task> tasks_;
 };
 
