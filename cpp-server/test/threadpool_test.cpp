@@ -7,10 +7,10 @@
 
 using namespace std;
 
-class ThreadPoolTest: public testing::TestWithParam<tuple<size_t, size_t>>
+class ThreadPoolTestP: public testing::TestWithParam<tuple<size_t, size_t>>
 { };
 
-TEST_P(ThreadPoolTest, SingleTask)
+TEST(ThreadPoolTest, SingleTask)
 {
   ThreadPool tp(3);
 
@@ -31,7 +31,7 @@ TEST_P(ThreadPoolTest, SingleTask)
   EXPECT_EQ(var, 42);
 }
 
-TEST_P(ThreadPoolTest, MultipleTasks)
+TEST_P(ThreadPoolTestP, MultipleTasks)
 {
   const size_t pool_size = get<0>(GetParam());
   const size_t task_number = get<1>(GetParam());
@@ -57,7 +57,7 @@ TEST_P(ThreadPoolTest, MultipleTasks)
 
 INSTANTIATE_TEST_SUITE_P(
   PoolSizeAndTaskNumber,
-  ThreadPoolTest,
+  ThreadPoolTestP,
   ::testing::Combine(
     ::testing::Values(1, 2, 5),
     ::testing::Values(5, 10, 50)));
