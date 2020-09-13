@@ -5,7 +5,7 @@
 #include <deque>
 #include <memory>
 #include <mutex>
-#include <set>
+#include <vector>
 
 #include <worker.hpp>
 
@@ -26,7 +26,7 @@ private:
   void shutdown();
 
 private:
-  using Workers = std::set<std::shared_ptr<Worker>>;
+  using Workers = std::vector<std::shared_ptr<Worker>>;
 
   const size_t size_;
 

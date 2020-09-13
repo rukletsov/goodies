@@ -1,5 +1,6 @@
 #include "threadpool.hpp"
 
+#include <algorithm>
 #include <cassert>
 #include <iostream>
 
@@ -10,7 +11,7 @@ ThreadPool::ThreadPool(size_t size):
   m_(make_shared<mutex>())
 {
   for (size_t idx = 0; idx < size; ++idx) {
-    workers_.emplace(make_shared<Worker>());
+    workers_.emplace_back(make_shared<Worker>());
   }
 }
 
@@ -22,12 +23,12 @@ ThreadPool::~ThreadPool()
 bool ThreadPool::is_idle()
 {
   lock_guard guard(*m_);
-  if (!tasks_.empty()) { return false; };
 
-  for (const auto& w : workers_) {
-    if (!w->is_free()) { return false; }
-  }
-  return true;
+  return (
+    tasks_.empty() &&
+    all_of(workers_.cbegin(), workers_.cend(), [](const auto& w) {
+      return w->is_free();
+    }));
 }
 
 void ThreadPool::shutdown()
