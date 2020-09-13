@@ -6,9 +6,7 @@
 
 using namespace std;
 
-ThreadPool::ThreadPool(size_t size):
-  size_(size),
-  m_(make_shared<mutex>())
+ThreadPool::ThreadPool(size_t size)
 {
   for (size_t idx = 0; idx < size; ++idx) {
     workers_.emplace_back(make_shared<Worker>());
@@ -22,7 +20,7 @@ ThreadPool::~ThreadPool()
 
 bool ThreadPool::is_idle()
 {
-  lock_guard guard(*m_);
+  lock_guard guard(m_);
 
   return (
     tasks_.empty() &&
@@ -35,7 +33,7 @@ void ThreadPool::shutdown()
 {
   Workers workers;
   {
-    lock_guard guard(*m_);
+    lock_guard guard(m_);
     for (const auto& w: workers_) { w->shutdown(); }
 
     workers = workers_;
@@ -47,7 +45,7 @@ void ThreadPool::shutdown()
 void ThreadPool::assign(const Task &task)
 {
   {
-    lock_guard guard(*m_);
+    lock_guard guard(m_);
     tasks_.push_back(task);
   }
   try_find_worker();
@@ -58,7 +56,7 @@ void ThreadPool::try_find_worker()
   Task task;
   shared_ptr<Worker> worker;
   {
-    lock_guard guard(*m_);
+    lock_guard guard(m_);
 
     for (const auto& w : workers_) {
       if (w->is_free()) {

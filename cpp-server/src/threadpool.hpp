@@ -28,9 +28,7 @@ private:
 private:
   using Workers = std::vector<std::shared_ptr<Worker>>;
 
-  const size_t size_;
-
-  std::shared_ptr<std::mutex> m_;
+  std::mutex m_;
 
   Workers workers_;
   std::deque<Task> tasks_;
