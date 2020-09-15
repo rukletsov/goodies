@@ -18,7 +18,7 @@ ThreadPool::~ThreadPool()
   shutdown();
 }
 
-bool ThreadPool::is_idle()
+bool ThreadPool::is_idle() const
 {
   lock_guard guard(m_);
 
@@ -42,7 +42,7 @@ void ThreadPool::shutdown()
   for (const auto& w: workers) { w->wait(); }
 }
 
-void ThreadPool::assign(const Task &task)
+void ThreadPool::assign(Task&& task)
 {
   {
     lock_guard guard(m_);

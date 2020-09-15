@@ -14,11 +14,11 @@ class ThreadPool
 public:
   using Task = std::function<void(void)>;
 
-  ThreadPool(std::size_t size);
+  explicit ThreadPool(std::size_t size);
   virtual ~ThreadPool();
 
-  void assign(const Task& task);
-  bool is_idle();
+  void assign(Task&& task);
+  bool is_idle() const;
 
 private:
   void try_find_worker();
@@ -28,7 +28,7 @@ private:
 private:
   using Workers = std::vector<std::shared_ptr<Worker>>;
 
-  std::mutex m_;
+  mutable std::mutex m_;
 
   Workers workers_;
   std::deque<Task> tasks_;
