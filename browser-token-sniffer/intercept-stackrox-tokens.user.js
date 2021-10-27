@@ -4,7 +4,7 @@
 // @version      1.0
 // @description  Intercepts authentication tokens from the header of the XHRs
 // @author       Alexander Rukletsov
-// @match        https://*.localhost:*
+// @match        https://*.localhost/*
 // @match        https://*.stackrox.com/*
 // @match        https://*.infra.rox.systems/*
 // @run-at       document-start
