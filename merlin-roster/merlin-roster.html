@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<style>
+.content {
+  display: flex;
+  justify-content: center;
+}
+</style>
+
+<script>
+function who(e) {
+  const roster = ['Alex', 'Daniel', 'Ivan', 'Micha&eumll', 'Mladen', 'Stephan', 'Tomek', 'Yann']
+  const selectedOne = roster[Math.floor(Math.random() * roster.length)];
+  document.getElementById("roster").innerHTML = selectedOne;
+}
+</script>
+
+<body onload="who()">
+<div class="content">
+  <span>Meeting&nbsp;host:&nbsp;</span>
+  <span id="roster"></span>
+</div>
+<div class="content">
+  <button class="child" type="button" onclick="who()">&#x21BA;</button>
+</div>
+</body>
+</html>
