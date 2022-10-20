@@ -7,6 +7,8 @@
 // @match        https://*.localhost/*
 // @match        https://*.stackrox.com/*
 // @match        https://*.infra.rox.systems/*
+// @match        https://*.acs-stage.rhcloud.com/*
+// @match        https://*.acs.rhcloud.com/*
 // @run-at       document-start
 // ==/UserScript==
 
