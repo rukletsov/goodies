@@ -11,6 +11,11 @@
 (function() {
     'use strict';
 
+    // Workaround TrustedHTML issue.
+    const escapeHTMLPolicy = window.trustedTypes.createPolicy("forceInner", {
+            createHTML: (to_escape) => to_escape
+        })
+
     // Set up div section in the top left corner.
     let div = document.createElement('div')
     div.style.position = 'absolute'
@@ -23,7 +28,7 @@
     // Set up a button.
     let btn = document.createElement('button')
     btn.id = 'rosterbtn'
-    btn.innerHTML = 'Who?'
+    btn.innerHTML = escapeHTMLPolicy.createHTML('Who?')
     btn.onclick = who
     div.appendChild(btn)
 
@@ -31,6 +36,6 @@
     function who(e) {
         const roster = ['Alex', 'Daniel', 'Ivan', 'Micha&eumll', 'Mladen', 'Stephan', 'Tomek', 'Yann']
         const selectedOne = roster[Math.floor(Math.random() * roster.length)];
-        document.getElementById('rosterbtn').innerHTML = selectedOne;
+        document.getElementById('rosterbtn').innerHTML = escapeHTMLPolicy.createHTML(selectedOne);
     }
 })();

@@ -32,6 +32,11 @@
 (function(){
     'use strict'
 
+    // Workaround TrustedHTML issue.
+    const escapeHTMLPolicy = window.trustedTypes.createPolicy("forceInner", {
+            createHTML: (to_escape) => to_escape
+        })
+
     // Set up div section in the top left corner.
     let div = document.createElement('div')
     let divStyle = div.style
@@ -46,7 +51,7 @@
     // Set up a button.
     let btn = document.createElement('button')
     btn.id = 'jwtbtn'
-    btn.innerHTML = 'Extract token(s)'
+    btn.innerHTML = escapeHTMLPolicy.createHTML('Extract token(s)')
     btn.onclick = ButtonClickAction
     div.appendChild(btn);
 
@@ -94,18 +99,18 @@
 
         switch ((tokens || []).length) {
             case 0:
-                document.getElementById('jwtbtn').innerHTML = 'No tokens found'
+                document.getElementById('jwtbtn').innerHTML = escapeHTMLPolicy.createHTML('No tokens found')
                 break
             case 1:
-                document.getElementById('jwtbtn').innerHTML = 'Token copied to clipboard'
+                document.getElementById('jwtbtn').innerHTML = escapeHTMLPolicy.createHTML('Token copied to clipboard')
                 copyToClipboard(tokens[0])
                 break
             default:
-                document.getElementById('jwtbtn').innerHTML = `Found ${tokens.length} unique tokens:`
+                document.getElementById('jwtbtn').innerHTML = escapeHTMLPolicy.createHTML(`Found ${tokens.length} unique tokens:`)
                 for (let item of tokens) {
                     // TODO(alexr): Add a copy-to-clipboard button for each entry.
                     var div = document.createElement('div')
-                    div.innerHTML = `${item}`
+                    div.innerHTML = escapeHTMLPolicy.createHTML(`${item}`)
                     div.style.backgroundColor = 'Gainsboro'
                     div.style.margin = '5px'
                     document.getElementById('jwtdiv').appendChild(div)
